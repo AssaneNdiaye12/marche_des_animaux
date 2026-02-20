@@ -9,3 +9,4 @@ seaborn
 pybase64
 altair>=5
 streamlit>=1.30.0
+plotly
