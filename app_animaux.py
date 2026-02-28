@@ -10,7 +10,6 @@ import time
 
 st.set_page_config(page_title="Marché des Animaux", page_icon="🐾", layout="wide")
 
-# ── Config ────────────────────────────────────────────────────────────────────
 CATS = {
     "🐕 Chiens":                  ("chiens",                    "CoinAfriqueSiteMap_Chiens"),
     "🐑 Moutons":                 ("moutons",                   "CoinAfriqueSiteMap_Moutons"),
@@ -22,9 +21,6 @@ HIDE  = {'web_scraper_order','web_scraper_start_url','container_link','container
 KOBO  = "https://ee-eu.kobotoolbox.org/x/oRhjimHa"
 GFORM = "https://docs.google.com/forms/d/e/1FAIpQLSfpkmUCq2l-cUH6EgbWwheaIJu1uFUe1vZ74pJmLpyRVtzWlA/viewform?usp=publish-editor" 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# FONCTIONS — Scraping (depuis methodes.py)
-# ═══════════════════════════════════════════════════════════════════════════════
 def scraper_categorie(categorie, nb_pages=5, progress_cb=None):
     df_final   = pd.DataFrame()
     est_lapins = (categorie == 'poules-lapins-et-pigeons')
@@ -65,9 +61,6 @@ def scraper_categorie(categorie, nb_pages=5, progress_cb=None):
     return df_final
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# FONCTIONS — Nettoyage & outliers (depuis methodes.py)
-# ═══════════════════════════════════════════════════════════════════════════════
 def nettoyer_prix(df):
     """
     Nettoie la colonne Prix :
@@ -160,10 +153,6 @@ def impute_outliers_iqr(data):
                         np.where(data[col] > upper, upper, data[col]))
     return data
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# HELPERS UI
-# ═══════════════════════════════════════════════════════════════════════════════
 @st.cache_resource
 def conn(p):
     return sqlite3.connect(p, check_same_thread=False) if os.path.exists(p) else None
@@ -208,10 +197,6 @@ def stat_row(p):
             f"{p.median():,.0f}", f"{p.mean():,.0f}", f"{p.quantile(.75):,.0f}",
             f"{p.max():,.0f}", f"{p.std():,.0f}"]
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# LAYOUT PRINCIPAL
-# ═══════════════════════════════════════════════════════════════════════════════
 st.markdown("# 🐾 Marché des Animaux — Data & Analyse")
 st.caption("Source : [CoinAfrique Sénégal](https://sn.coinafrique.com)")
 st.markdown("---")
@@ -225,10 +210,6 @@ mode         = st.sidebar.radio("Mode", [
 cat           = st.sidebar.selectbox("Catégorie", list(CATS))
 slug, tbl_b   = CATS[cat]
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# 1. DONNÉES TRAITÉES — Scraping live + nettoyage automatique + Winsorisation
-# ═══════════════════════════════════════════════════════════════════════════════
 if mode == "📊 Données traitées":
 
     st.subheader(f"📊 Données traitées — {cat}")
@@ -238,13 +219,11 @@ if mode == "📊 Données traitées":
         "et **correction des valeurs aberrantes par Winsorisation (5%–95%)**."
     )
 
-    # ── Paramètres dans la sidebar ────────────────────────────────────────────
     st.sidebar.markdown("---")
     st.sidebar.markdown("### ⚙️ Paramètres de scraping")
     nb_pages = st.sidebar.slider("Nombre de pages", min_value=1, max_value=20, value=3, step=1)
     st.sidebar.caption(f"≈ {nb_pages * 20} annonces estimées")
 
-    # ── Récapitulatif ─────────────────────────────────────────────────────────
     st.markdown(
         f"<div style='padding:10px 18px;background:#f0f8ff;border-radius:8px;"
         f"border-left:4px solid #17a2b8;margin-bottom:16px'>"
@@ -254,7 +233,6 @@ if mode == "📊 Données traitées":
         f"</div>", unsafe_allow_html=True
     )
 
-    # ── Boutons lancer / effacer ──────────────────────────────────────────────
     col_btn, col_reset = st.columns([3, 1])
     lancer = col_btn.button("🚀 Lancer le scraping", type="primary", use_container_width=True)
     key_df  = f"df_traite_{slug}"
@@ -266,7 +244,6 @@ if mode == "📊 Données traitées":
                 del st.session_state[k]
         st.rerun()
 
-    # ── Scraping avec barre de progression ───────────────────────────────────
     if lancer:
         progress_bar = st.progress(0, text="Démarrage du scraping...")
         status_txt   = st.empty()
@@ -294,7 +271,6 @@ if mode == "📊 Données traitées":
         st.success(f"✅ {len(df_wins)} annonces récupérées, nettoyées et corrigées !")
         st.rerun()
 
-    # ── Affichage si données disponibles ─────────────────────────────────────
     if key_df in st.session_state:
         df   = st.session_state[key_df]
         meta = st.session_state.get(key_meta, {})
@@ -396,10 +372,6 @@ if mode == "📊 Données traitées":
             "</div>", unsafe_allow_html=True
         )
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# 2. DONNÉES NON TRAITÉES
-# ═══════════════════════════════════════════════════════════════════════════════
 elif mode == "📥 Données non traitées":
     c = conn(st.sidebar.text_input("BD non traitée", "data/SGBD_CoinafriqueN.db"))
     if not c: st.error("❌ BD introuvable"); st.stop()
@@ -447,9 +419,6 @@ elif mode == "📥 Données non traitées":
             )
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# 3. TABLEAU DE BORD
-# ═══════════════════════════════════════════════════════════════════════════════
 elif mode == "📈 Tableau de bord des données":
     c    = conn(st.sidebar.text_input("BD non traitée", "data/SGBD_CoinafriqueN.db"))
     meth = st.sidebar.selectbox("Méthode outliers", ["Winsorization (5%-95%)", "Filtre IQR"])
@@ -459,12 +428,10 @@ elif mode == "📈 Tableau de bord des données":
     if df.empty: st.warning("Aucune donnée."); st.stop()
     if 'Details' in df.columns: df = df.rename(columns={'Details': 'Nom'})
 
-    # ── Série brute numérique ─────────────────────────────────────────────────
     pb = prix_serie(df)
     if pb.empty:
         st.error("❌ Aucune colonne Prix exploitable dans cette table."); st.stop()
 
-    # ── Traitement des outliers DIRECTEMENT sur la série numérique ───────────
     def winsorize_serie(s):
         lo, hi = np.percentile(s, 5), np.percentile(s, 95)
         return s.clip(lo, hi)
@@ -476,7 +443,6 @@ elif mode == "📈 Tableau de bord des données":
 
     pt = winsorize_serie(pb) if "Wins" in meth else iqr_serie(pb)
 
-    # ── En-tête & KPIs comparatifs ────────────────────────────────────────────
     st.subheader(f"📈 Tableau de bord — {cat}")
     st.markdown("#### Comparaison des indicateurs clés")
     col_kpi1, col_kpi2 = st.columns(2)
@@ -598,10 +564,6 @@ elif mode == "📈 Tableau de bord des données":
                 f"({n_retires/len(pb)*100:.1f}% des données)."
             )
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# 4. COMMENTAIRES
-# ═══════════════════════════════════════════════════════════════════════════════
 else:
     st.subheader("💬 Commentaires & Feedback")
     t1, t2, t3 = st.tabs(["📝 Feedback", "🐛 Bug", "⭐ Évaluation"])
@@ -652,7 +614,5 @@ else:
             st.success(f"✅ Merci pour votre évaluation ! Note : {n}/5")
             if n >= 4: st.balloons()
 
-
-# ── Footer ────────────────────────────────────────────────────────────────────
 st.markdown("---")
 st.caption("🐾 Marché des Animaux · Streamlit · [CoinAfrique Sénégal](https://sn.coinafrique.com)")
